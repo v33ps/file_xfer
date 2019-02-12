@@ -12,20 +12,19 @@ def main():
     fname = "tmp"
     with conn:
         print('Connected by', addr)
+        fname = conn.recv(1024)
+        print("fname: ", fname)
+        conn.send(fname)
+        print("returned to client: ", fname)
         while True:
             data = conn.recv(1024)
-            tmp = data.decode('utf-8')
             if not data:
                 break
-            if tmp[:1] == 'f':
-                fname = str(data[1:], 'utf-8')
-                fname = fname + ".recvd"
-                conn.send(data[1:])
             else:
                 print("writing some data")
                 # we have file data
-                with open(fname, 'a') as f:
-                    f.write(tmp)
+                with open(fname, 'ab') as f:
+                    f.write(data)
             
 
 

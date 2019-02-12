@@ -8,6 +8,8 @@
 #include <sys/socket.h> 
 #include <unistd.h>
 #include <errno.h>
+#include "crypto.h"
+#include "mbedtls/aes.h"
 
 #define MAX_SIZE    1024
 #define PORT        9875
@@ -16,8 +18,9 @@ int client_setup(int *sockfd, struct sockaddr_in *servaddr);
 void teardown(int sockfd, FILE *fp);
 
 
-int main()
+int main(int argc, char *argv[])
 {
+    create_aes_key();
     // define a buffer of max size
     unsigned char buf[MAX_SIZE] = { 0 };
     void *sent;
@@ -29,27 +32,23 @@ int main()
     struct sockaddr_in servaddr = { 0 };
     // open a socket to the destination server
     if(client_setup(&sockfd, &servaddr) < 0) {
-        teardown(sockfd, fp);
         exit(0);
     }
     // while there is still content in the file
-    if((fp = fopen("/home/sean/Code/c/file_xfer/client/test_file.txt", "r")) == NULL) {
+    if((fp = fopen(argv[1], "r")) == NULL) {
         printf("Failed to read file, dead\n");
         exit(0);
     }
     fd = fileno(fp);
 
     // send the filename over and get the confirmation
-    // the confirmation is just the filename that was parsed out
-    unsigned char fname[] = "ftest_file.txt";
+    // the confirmation is just the filename
+    unsigned char fname[] = "test_file.txt";
     bytes_written = write(sockfd, fname, sizeof(fname)-1);
     bytes_read = read(sockfd, buf, sizeof(buf));
 
-    // strip the 1st char from fname to have the real filename to check
-    unsigned char *pbuf;
-    pbuf = fname;
-    pbuf++;
-    if(strncmp(buf, pbuf, strlen(pbuf)+1) != 0) {
+    if(strncmp(buf, fname, strlen(fname)+1) != 0) {
+        printf("__%s__ __%s__\n", buf, fname);
         printf("strings aren't equal\n");
         teardown(sockfd, fp);
         return 0;
